@@ -145,4 +145,4 @@ test("TOGGLE_CART", () => {
     });
     
     expect(newState2.cartOpen).toBe(false);
-})
+});
