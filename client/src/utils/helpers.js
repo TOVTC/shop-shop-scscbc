@@ -17,9 +17,9 @@ export function idbPromise(storeName, method, object) {
     request.onupgradeneeded = function(e) {
       const db = request.result;
       // create object store for each type of data and set "primary" key index to be the "_id" of the data
-      db.createObjectStore("products", {keypath: "_id"});
-      db.createObjectStore("categories", {keypath: "_id"});
-      db.createObjectStore("cart", {keypath: "_id"});
+      db.createObjectStore("products", {keyPath: "_id"});
+      db.createObjectStore("categories", {keyPath: "_id"});
+      db.createObjectStore("cart", {keyPath: "_id"});
     }
 
     //handle any errors with connecting
@@ -36,35 +36,34 @@ export function idbPromise(storeName, method, object) {
       // save a reference to that object store
       store = tx.objectStore(storeName);
 
-    }
+      // if there's any errors, let us know
+      db.onerror = function(e) {
+        console.log("error", e);
+      }
 
-    // if there's any errors, let us know
-    db.onerror = function(e) {
-      console.log("error", e);
-    }
+      switch (method) {
+        case "put":
+          store.put(object, object._id);
+          resolve(object);
+          break;
+        case "get":
+          const all = store.getAll();
+          all.onsuccess = function() {
+            resolve(all.result);
+          }
+          break;
+        case "delete":
+          store.delete(object._id);
+          break;
+        default:
+          console.log("No valid method");
+          break;
+      }
 
-    switch (method) {
-      case "put":
-        store.put(object);
-        resolve(object);
-        break;
-      case "get":
-        const all = store.getAll();
-        all.onsuccess = function() {
-          resolve(all.result);
-        }
-        break;
-      case "delete":
-        store.delete(object._id);
-        break;
-      default:
-        console.log("No valid method");
-        break;
-    }
-
-    // when the transaction is complete, close the connection
-    tx.oncomplete = function() {
-      db.close();
+      // when the transaction is complete, close the connection
+      tx.oncomplete = function() {
+        db.close();
+      }
     }
   });
 }

@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
-
 import { QUERY_PRODUCTS } from '../utils/queries';
 import spinner from '../assets/spinner.gif';
-
 import {useStoreContext} from "../utils/GlobalState";
+import Cart from "../components/Cart";
+import {idbPromise} from "../utils/helpers";
 import {
   UPDATE_PRODUCTS,
   REMOVE_FROM_CART,
   UPDATE_CART_QUANTITY,
   ADD_TO_CART
 } from "../utils/actions";
-
-import Cart from "../components/Cart";
 
 function Detail() {
   const [state,dispatch] = useStoreContext();
@@ -47,15 +45,31 @@ function Detail() {
   }
 
   useEffect(() => {
+    // already in global store
     if (products.length) {
       setCurrentProduct(products.find(product => product._id === id));
-    } else if (data) {
+    } 
+    // retrieved from server
+    else if (data) {
       dispatch({
         type: UPDATE_PRODUCTS,
         products: data.products
-      })
+      });
+      
+      data.products.forEach((product) => {
+        idbPromise("products", "put", product);
+      });
     }
-  }, [products, data, dispatch, id]);
+    // get cache from idb
+    else if (!loading) {
+      idbPromise("products", "get").then((indexedProducts) => {
+        dispatch({
+          type: UPDATE_PRODUCTS,
+          prodcts: indexedProducts
+        });
+      });
+    }
+  }, [products, data, loading, dispatch, id]);
 
   return (
     <>
